@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    # Activar rewrite
+    RewriteEngine on
+
+    ErrorDocument 404 http://localhost/
+
+    RewriteCond %{SCRIPT_FILENAME} !-d
+    RewriteCond %{SCRIPT_FILENAME} !-f
+
+    RewriteRule ^(.*) index.php?routing=$1
+</IfModule>
