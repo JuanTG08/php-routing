@@ -1,0 +1,6 @@
+# Enrutador de PHP
+
+## Conocimientos Basicos
+- Se debe "configurar" la dirección URL principal para el funcionamiento de este en el archivo "parameters.php" y en ".htaccess"
+
+## Desarrollado por Juan David Triana
