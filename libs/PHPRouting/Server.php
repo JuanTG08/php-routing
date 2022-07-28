@@ -8,20 +8,22 @@ class Server extends ErrorServerController {
     private $Routes;
 
     public function __construct() {
-        $this->URI = $_SERVER['REQUEST_URI'];
+        $this->URI = base_url;
         $this->METHOD = $_SERVER['REQUEST_METHOD'];
         $this->URL_HOST = $_SERVER['HTTP_HOST'];
     }
 
     public function IRoutes(
-        string $path,
-        string | null $callback = null,
-        string $method = 'GET',
-        string | bool $redirecTo = false,
+        string $path, // Direccion URL la cual se habilitara
+        string | bool $callback = false, // Funcion de regreso
+        array | bool $loadChildren = false, // Complemento para la ejecucion del loadChildren
+        string $method = 'GET', // Metodo el cual se ejecutara
+        string | bool $redirecTo = false, // Redireccion
     ): array {
         return [
             "Path" => $path,
             "Callback" => $callback,
+            "loadChildren" => $loadChildren,
             "Method" => $method,
             "redirecTo" => $redirecTo,
         ];
@@ -41,18 +43,21 @@ class Server extends ErrorServerController {
                 // Realizamos una busqueda de parametros
                 // $params = $this->descomposeParams($this->descomposeUri($route['Path']));
 
-                if ($route['Path'] === '*' && $route['redirecTo'] !== false) header('Location:'.$route['redirecTo']);
+                if ($route['Path'] === '*' && $route['redirecTo'] !== false) header('Location:'.$this->URI.$route['redirecTo']);
+                $patRouting = empty($_GET['routing']) ? '/' : '/'.$_GET['routing']; // Estructuramos la ruta dada por la variable tipo GET
 
-                $Params = $this->verifyPathUri($this->descomposeUri($this->URI), $this->descomposeUri($route['Path']));
+                $Params = $this->verifyPathUri($this->descomposeUri($patRouting), $this->descomposeUri($route['Path']));
                 // Si coinciden con su metodo, esta ejecutara su callback
                 if ($Params && ($route['Method'] === $this->METHOD || $route['Method'] === 'FULL')) {
                     $request = array(
-                        [
-                            "URI" => [
-                                "params" => $Params[0],
-                            ]
-                        ]
+                        "url" => [
+                            "params" => $Params[0],
+                            "url" => $this->URI,
+                            "host" => $this->URL_HOST,
+                            "method" => $this->METHOD,
+                        ],
                     );
+                    if ($route['loadChildren']) return $this->executeCallbackForLoadChildren($route['loadChildren'], $request);
                     return $route['Callback']($request);
                 }
 
@@ -90,30 +95,47 @@ class Server extends ErrorServerController {
             }
         }
         return [$params, true];
-        /*
-        if (count($pathRequired) != count($pathGiven)) return false;
-        $params = [];
-        foreach ($pathRequired as $index => $path) {
-            // if ($pathGiven[$index] === '' && $index > 0) return false;
-            if (!in_array($path, $pathGiven)) {
-                echo "aca";
-                if (strpos($path, ':') === false) return false;
-                // echo "-".$pathGiven[$index]."-";
-                array_push($params, array(explode(':', $path)[1] => $pathGiven[$index]));
-            }
-        }
-        return $params !== [] ? $params : true;
-        */
     }
 
-    private function descomposeParams(array $params): array {
-        $paramsEnd = [];
-        foreach ($params as $key => $path) {
-            if (strpos($path, ':') !== false) {
-                array_push($paramsEnd, explode(':', $path)[1]);
-            }
+    private function executeCallbackForLoadChildren($loadChildren, ...$args) {
+        if (!file_exists($loadChildren['import'])) {
+            echo 'Failed to load file ('.$loadChildren['import'].'). Please check your configuration or routing configuration.';
+            return;
         }
-        var_dump($paramsEnd);
-        return [];
+        if (!class_exists($loadChildren['className'])) require_once($loadChildren['import']);
+        if (!class_exists($loadChildren['className'])) {
+            echo 'Failed to load class ('.$loadChildren['className'].'). Please check your configuration or routing configuration.';
+            return;
+        }
+        $callback = $loadChildren['functionExecuted'];
+        try {
+            $loadChildren['className']::$callback($args);
+        } catch (\Throwable $th) {
+            echo 'Failed to load function ('.$loadChildren['functionExecuted'].'). Please check your configuration or routing configuration.';
+            return;
+        }
+        /*
+        $errorLoadChildren = array();
+        if (!file_exists($loadChildren['import'])) {
+            echo 'Failed to load file ('.$loadChildren['import'].'). Please check your configuration or routing configuration.';
+            return;
+        }
+        // echo json_encode($loadChildren); die;
+        try {
+            if (!class_exists($loadChildren['className'])) include($loadChildren['import']);
+
+            if (!class_exists($loadChildren['className'])) {
+                echo 'Failed to load class ('.$loadChildren['className'].'). Please check your configuration or routing configuration.';
+                return;
+            }
+            if (function_exists($loadChildren['functionExecuted'])) {
+                echo 'Failed to execute function ('.$loadChildren['functionExecuted'].'). Please check your configuration or routing configuration.';
+                return;
+            }
+            return $loadChildren['className']::$loadChildren['functionExecuted']($args);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+        */
     }
 }

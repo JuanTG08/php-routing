@@ -1,5 +1,4 @@
 <?php
-if (!isset($SERVER_START)) header('Location:/');
 class PublicController {
     public static function home($req) {
         require_once './views/partials/header.php';
@@ -18,7 +17,7 @@ class PublicController {
     }
 
     public static function user($req) {
-        echo json_encode($req);
+        echo json_encode($_SERVER);
     }
 
     public static function kevin($req) {

@@ -1,5 +1,5 @@
 <?php
-if (!isset($SERVER_START)) header('Location:/');
+// if (!isset($SERVER_START)) header('Location:'.base_url);
 
 class ErrorController {
     public static function error404($req) {

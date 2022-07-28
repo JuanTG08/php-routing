@@ -4,8 +4,8 @@
 
     Options -Indexes
 
-    ErrorDocument 403 http://localhost/error403
-    ErrorDocument 404 http://localhost/error404
+    ErrorDocument 403 http://localhost/routing/project-aves-ejem/error403
+    ErrorDocument 404 http://localhost/routing/project-aves-ejem/error404
 
 
     RewriteCond %{SCRIPT_FILENAME} !-d
