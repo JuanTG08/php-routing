@@ -1,21 +1,29 @@
 <?php
 require_once './libs/PHPRouting/Controller/ErrorController.php';
 
-class Server extends ErrorController {
+class Server extends ErrorServerController {
     private $URI;
+    private $URL_HOST;
     private $METHOD;
     private $Routes;
 
     public function __construct() {
         $this->URI = $_SERVER['REQUEST_URI'];
         $this->METHOD = $_SERVER['REQUEST_METHOD'];
+        $this->URL_HOST = $_SERVER['HTTP_HOST'];
     }
 
-    public function IRoutes(string $path, string $callback, string $method = 'GET'): array {
+    public function IRoutes(
+        string $path,
+        string | null $callback = null,
+        string $method = 'GET',
+        string | bool $redirecTo = false,
+    ): array {
         return [
             "Path" => $path,
             "Callback" => $callback,
-            "Method" => $method
+            "Method" => $method,
+            "redirecTo" => $redirecTo,
         ];
     }
 
@@ -33,11 +41,19 @@ class Server extends ErrorController {
                 // Realizamos una busqueda de parametros
                 // $params = $this->descomposeParams($this->descomposeUri($route['Path']));
 
-                $haveParams = $this->verifyPathUri($this->descomposeUri($this->URI), $this->descomposeUri($route['Path']));
+                if ($route['Path'] === '*' && $route['redirecTo'] !== false) header('Location:'.$route['redirecTo']);
 
+                $Params = $this->verifyPathUri($this->descomposeUri($this->URI), $this->descomposeUri($route['Path']));
                 // Si coinciden con su metodo, esta ejecutara su callback
-                if (/* $route['Path'] === $this->URI */ $haveParams && $route['Method'] === $this->METHOD) {
-                    return $route['Callback']();
+                if ($Params && ($route['Method'] === $this->METHOD || $route['Method'] === 'FULL')) {
+                    $request = array(
+                        [
+                            "URI" => [
+                                "params" => $Params[0],
+                            ]
+                        ]
+                    );
+                    return $route['Callback']($request);
                 }
 
                 // Indicamos que si es el ultimo objeto del array de las rutas, entonces realice las comparaciones necesarias
@@ -55,11 +71,26 @@ class Server extends ErrorController {
     /*
         Funcionalidades internas para la destructuracion y logica de las rutas
     */
-    private function descomposeUri(string $uri): array {
-        return explode('/', $uri);
+    private function descomposeUri(string $uri, string $indice = '/'): array {
+        return explode($indice, $uri);
     }
 
     private function verifyPathUri(array $pathGiven, array $pathRequired) {
+        $params = array();
+        foreach ($pathGiven as $i => $path) {
+            if (count($pathGiven) != count($pathRequired)) return false;
+            if ($path === $pathRequired[$i]) continue;
+            if ($path != $pathRequired[$i] && $path != "") {
+                $paramsVerify = $this->descomposeUri($pathRequired[$i], ':');
+                if (count($paramsVerify) === 1) return false;
+                array_push($params, [$paramsVerify[1] => $path]);
+                continue;
+            } else {
+                return false;
+            }
+        }
+        return [$params, true];
+        /*
         if (count($pathRequired) != count($pathGiven)) return false;
         $params = [];
         foreach ($pathRequired as $index => $path) {
@@ -72,6 +103,7 @@ class Server extends ErrorController {
             }
         }
         return $params !== [] ? $params : true;
+        */
     }
 
     private function descomposeParams(array $params): array {

@@ -1,6 +1,6 @@
 <?php
 
-class ErrorController {
+class ErrorServerController {
     public function errorCannotGet($uri) {
         require_once './libs/PHPRouting/Screens/CannotGet.php';
     }

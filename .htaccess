@@ -2,7 +2,11 @@
     # Activar rewrite
     RewriteEngine on
 
-    ErrorDocument 404 http://localhost/
+    Options -Indexes
+
+    ErrorDocument 403 http://localhost/error403
+    ErrorDocument 404 http://localhost/error404
+
 
     RewriteCond %{SCRIPT_FILENAME} !-d
     RewriteCond %{SCRIPT_FILENAME} !-f
