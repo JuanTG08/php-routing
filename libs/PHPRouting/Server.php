@@ -7,12 +7,16 @@ class Server extends ErrorServerController {
     private $METHOD;
     private $Routes;
 
+    private $RenderSettings;
+
+
     public function __construct() {
         $this->URI = base_url;
         $this->METHOD = $_SERVER['REQUEST_METHOD'];
         $this->URL_HOST = $_SERVER['HTTP_HOST'];
     }
 
+    // Formato basico de los rutas, como se deben estructurar
     public function IRoutes(
         string $path, // Direccion URL la cual se habilitara
         string | bool $callback = false, // Funcion de regreso
@@ -29,8 +33,24 @@ class Server extends ErrorServerController {
         ];
     }
 
+    // Establecemos las rutas
     public function setRoutes(...$Routes) {
         $this->Routes = $Routes;
+    }
+
+
+    public function IRenderConfig(
+        array $HTMLOptions = [],
+        array $ServerOptions = [],
+    ): array {
+        return [
+            "HTMLOptions" => $HTMLOptions,
+            "ServerOptions" => $ServerOptions,
+        ];
+    }
+
+    public function setRenderingConfig(...$optionsRender) {
+        $this->RenderSettings = $optionsRender;
     }
 
     // Cramos la funcionalidad la cual dara la direccion de la ruta
@@ -41,7 +61,6 @@ class Server extends ErrorServerController {
             // Seccionamos las rutas para saber cual coincidira
             foreach ($this->Routes as $index => $route) {
                 // Realizamos una busqueda de parametros
-                // $params = $this->descomposeParams($this->descomposeUri($route['Path']));
 
                 if ($route['Path'] === '*' && $route['redirecTo'] !== false) header('Location:'.$this->URI.$route['redirecTo']);
                 $patRouting = empty($_GET['routing']) ? '/' : '/'.$_GET['routing']; // Estructuramos la ruta dada por la variable tipo GET
@@ -57,6 +76,7 @@ class Server extends ErrorServerController {
                             "method" => $this->METHOD,
                         ],
                     );
+                    $this->renderPage($route, $request);
                     if ($route['loadChildren']) return $this->executeCallbackForLoadChildren($route['loadChildren'], $request);
                     return $route['Callback']($request);
                 }
@@ -97,6 +117,7 @@ class Server extends ErrorServerController {
         return [$params, true];
     }
 
+    // Funciónn encargada en ejecutar los procesos pedidos en la ruta con la particularidad de la carga lenta
     private function executeCallbackForLoadChildren($loadChildren, ...$args) {
         if (!file_exists($loadChildren['import'])) {
             echo 'Failed to load file ('.$loadChildren['import'].'). Please check your configuration or routing configuration.';
@@ -114,28 +135,10 @@ class Server extends ErrorServerController {
             echo 'Failed to load function ('.$loadChildren['functionExecuted'].'). Please check your configuration or routing configuration.';
             return;
         }
-        /*
-        $errorLoadChildren = array();
-        if (!file_exists($loadChildren['import'])) {
-            echo 'Failed to load file ('.$loadChildren['import'].'). Please check your configuration or routing configuration.';
-            return;
-        }
-        // echo json_encode($loadChildren); die;
-        try {
-            if (!class_exists($loadChildren['className'])) include($loadChildren['import']);
+    }
 
-            if (!class_exists($loadChildren['className'])) {
-                echo 'Failed to load class ('.$loadChildren['className'].'). Please check your configuration or routing configuration.';
-                return;
-            }
-            if (function_exists($loadChildren['functionExecuted'])) {
-                echo 'Failed to execute function ('.$loadChildren['functionExecuted'].'). Please check your configuration or routing configuration.';
-                return;
-            }
-            return $loadChildren['className']::$loadChildren['functionExecuted']($args);
-        } catch (\Throwable $th) {
-            throw $th;
-        }
-        */
+    // Renderización de la información
+    private function renderPage() {
+        
     }
 }
